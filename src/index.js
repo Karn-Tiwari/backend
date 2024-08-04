@@ -2,20 +2,22 @@
 
 import dotenv from "dotenv";
 import connectDB from "./db/index.js";
-dotenv.config({ path: "./env" });
-import express from "express";
+import { app } from "./app.js";
 
-const app = express();
+dotenv.config({ path: "./env" });
+
+const PORT = process.env.PORT || 8000;
+//Connect mongoDb and start the server
 connectDB()
   .then(() => {
-    app.listen(process.env.PORT || 8000, () => {
-      console.log(`Server is running at port :${process.env.PORT}`);
+    app.listen(PORT, () => {
+      console.log(`Server is running at port :${PORT}`);
     });
   })
   .catch((err) => {
-    console.log("MONGO DB connection failed !!!: ", err);
+    console.log("MONGO DB connection failed : ", err);
   });
-// // Connect to MongoDB ye ek iffi function jo immediately execute hota hai
+// // Connect to MongoDB ye ek IFFIII function jo immediately execute hai
 // // ;(async () => {})();
 // import mongoose from "mongoose";
 // import { DB_NAME } from "./constants";
