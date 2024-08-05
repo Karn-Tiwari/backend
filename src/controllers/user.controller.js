@@ -119,7 +119,7 @@ const loginUser = asyncHandler(async (req, res) => {
   //Model ki help se findOne call karna iska matlab jo bhi hme pehle mill jaye chahe wo email ho ya userName ho
 
   const user = await User.findOne({
-    $nor: [{ userName }, { email }],
+    $or: [{ userName }, { email }],
   });
 
   if (!user) {
@@ -127,17 +127,21 @@ const loginUser = asyncHandler(async (req, res) => {
   }
 
   const isPasswordValid = await user.isPasswordCorrect(password);
+
   if (!isPasswordValid) {
     throw new ApiError(401, "Password incorrect");
   }
 
+  //Uper jo generate function define kiye hai access and refresh token k liye usme userId pass karke access and refresh token generate kar sakte hai
   const { accessToken, refreshToken } = await generateAccessAndRefreshToken(
     user._id
   );
+  //Hum nhi chahte ki loggedInUser ko password aur refreshtoken bheje
   const loggedInUser = await User.findById(user._id).select(
     "-password -refreshToken"
   );
 
+  //Iski help se cookies frontend se modifiable nhi hoti sirf server se modify kiya ja sakt ahi
   const options = {
     httpOnly: true,
     secure: true,
@@ -157,7 +161,33 @@ const loginUser = asyncHandler(async (req, res) => {
         },
         "User logged in successfully"
       )
+      //Ye APIresponse k structure k hisab se hum fields bhej rhe hai jisse api ka response me ye sab dikhe
     );
 });
 
-export { registerUser, loginUser };
+const logOutUser = asyncHandler(async (req, res) => {
+  await User.findByIdAndUpdate(
+    req.user._id,
+    {
+      $set: {
+        refreshToken: undefined,
+      },
+    },
+    {
+      new: true,
+    }
+  );
+
+  const options = {
+    httpOnly: true,
+    secure: true,
+  };
+
+  return res
+    .status(200)
+    .clearCookie("accessToken", options)
+    .clearCookie("refreshToken", options)
+    .json(new ApiResponse(200, {}, "user logged out"));
+});
+
+export { registerUser, loginUser, logOutUser };
